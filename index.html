@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>AR穴位置システム</title>
+<title>AR寸法システム</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
@@ -31,7 +31,8 @@ body {
 <body>
 
 <div id="ui">
-  タップで穴追加🔥
+  タップで穴追加🔥<br>
+  距離自動表示📏
 </div>
 
 <a-scene cursor="rayOrigin: mouse">
@@ -55,14 +56,17 @@ body {
 </a-scene>
 
 <script>
+
 const scene = document.querySelector("a-scene");
 const ground = document.querySelector("#ground");
+
+let holes = [];
 
 ground.addEventListener("click", (e) => {
 
   const point = e.detail.intersection.point;
 
-  // 穴
+  // 穴作成
   const hole = document.createElement("a-cylinder");
 
   hole.setAttribute("position", {
@@ -77,26 +81,61 @@ ground.addEventListener("click", (e) => {
 
   scene.appendChild(hole);
 
-  // 寸法テキスト
-  const text = document.createElement("a-text");
-
-  text.setAttribute("value",
-    `${(point.x * 100).toFixed(0)} mm`
-  );
-
-  text.setAttribute("position", {
+  holes.push({
     x: point.x,
-    y: 0.3,
     z: point.z
   });
 
-  text.setAttribute("align", "center");
-  text.setAttribute("color", "yellow");
-  text.setAttribute("scale", "1 1 1");
+  // 2個以上なら距離計算
+  if (holes.length >= 2) {
 
-  scene.appendChild(text);
+    const a = holes[holes.length - 2];
+    const b = holes[holes.length - 1];
+
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+
+    const distance = Math.sqrt(dx * dx + dz * dz);
+
+    // mm換算
+    const mm = (distance * 1000).toFixed(0);
+
+    // 中間位置
+    const midX = (a.x + b.x) / 2;
+    const midZ = (a.z + b.z) / 2;
+
+    // 距離テキスト
+    const text = document.createElement("a-text");
+
+    text.setAttribute("value", `${mm} mm`);
+
+    text.setAttribute("position", {
+      x: midX,
+      y: 0.3,
+      z: midZ
+    });
+
+    text.setAttribute("align", "center");
+    text.setAttribute("color", "yellow");
+    text.setAttribute("scale", "1 1 1");
+
+    scene.appendChild(text);
+
+    // 線
+    const line = document.createElement("a-entity");
+
+    line.setAttribute("line", {
+      start: `${a.x} 0.05 ${a.z}`,
+      end: `${b.x} 0.05 ${b.z}`,
+      color: "yellow"
+    });
+
+    scene.appendChild(line);
+
+  }
 
 });
+
 </script>
 
 </body>
