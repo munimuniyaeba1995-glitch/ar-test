@@ -2,57 +2,102 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AR穴位置ガイド</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AR穴位置システム</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
 <style>
 body {
-  margin:0;
-  overflow:hidden;
+  margin: 0;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+#ui {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  color: white;
+  background: rgba(0,0,0,0.5);
+  padding: 10px;
+  border-radius: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<a-scene embedded arjs>
+<div id="ui">
+  タップで穴追加🔥
+</div>
+
+<a-scene cursor="rayOrigin: mouse">
 
   <!-- カメラ -->
-  <a-marker preset="hiro">
+  <a-camera position="0 1.6 0"></a-camera>
 
-    <!-- 穴位置 -->
-    <a-cylinder
-      position="0 0.1 0"
-      radius="0.03"
-      height="0.01"
-      color="red">
-    </a-cylinder>
+  <!-- ライト -->
+  <a-light type="ambient" intensity="1"></a-light>
 
-    <!-- 寸法線 -->
-    <a-box
-      position="0.15 0.01 0"
-      width="0.3"
-      height="0.005"
-      depth="0.005"
-      color="yellow">
-    </a-box>
-
-    <!-- テキスト -->
-    <a-text
-      value="150mm"
-      position="0.15 0.08 0"
-      scale="0.5 0.5 0.5"
-      color="white">
-    </a-text>
-
-  </a-marker>
-
-  <a-entity camera></a-entity>
+  <!-- 床 -->
+  <a-plane
+    id="ground"
+    position="0 0 -5"
+    rotation="-90 0 0"
+    width="20"
+    height="20"
+    color="#444">
+  </a-plane>
 
 </a-scene>
+
+<script>
+const scene = document.querySelector("a-scene");
+const ground = document.querySelector("#ground");
+
+ground.addEventListener("click", (e) => {
+
+  const point = e.detail.intersection.point;
+
+  // 穴
+  const hole = document.createElement("a-cylinder");
+
+  hole.setAttribute("position", {
+    x: point.x,
+    y: 0.05,
+    z: point.z
+  });
+
+  hole.setAttribute("radius", 0.08);
+  hole.setAttribute("height", 0.02);
+  hole.setAttribute("color", "red");
+
+  scene.appendChild(hole);
+
+  // 寸法テキスト
+  const text = document.createElement("a-text");
+
+  text.setAttribute("value",
+    `${(point.x * 100).toFixed(0)} mm`
+  );
+
+  text.setAttribute("position", {
+    x: point.x,
+    y: 0.3,
+    z: point.z
+  });
+
+  text.setAttribute("align", "center");
+  text.setAttribute("color", "yellow");
+  text.setAttribute("scale", "1 1 1");
+
+  scene.appendChild(text);
+
+});
+</script>
 
 </body>
 </html>
