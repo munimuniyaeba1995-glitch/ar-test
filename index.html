@@ -5,7 +5,7 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1.0">
 
-<title>AR CAD SYSTEM DEBUG</title>
+<title>AR CAD SYSTEM FIX</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
@@ -26,10 +26,10 @@ body{
   background:rgba(0,0,0,0.7);
   color:white;
 
-  padding:12px;
+  padding:10px;
   border-radius:10px;
 
-  width:240px;
+  width:220px;
 }
 
 button{
@@ -40,14 +40,12 @@ button{
   border-radius:8px;
   background:#ff4444;
   color:white;
-  font-size:16px;
 }
 
 #debug{
   margin-top:10px;
   font-size:12px;
-  line-height:1.5;
-  max-height:200px;
+  max-height:120px;
   overflow:auto;
 }
 
@@ -58,20 +56,19 @@ button{
 
 <div id="ui">
 
-🔥 AR CAD SYSTEM<br>
-DEBUG EDITION
+🔥 AR CAD SYSTEM
 
 <button id="clearBtn">
-穴データ削除
+リセット
 </button>
 
 <div id="debug">
-起動中...
+READY
 </div>
 
 </div>
 
-<a-scene cursor="rayOrigin: mouse">
+<a-scene>
 
   <!-- カメラ -->
   <a-camera position="0 1.6 0"></a-camera>
@@ -111,22 +108,21 @@ document.querySelector("#clearBtn");
 let holes =
 JSON.parse(
 localStorage.getItem("holes")
-) || [];
+)||[];
 
-// ====================
+// =====================
 // DEBUG
-// ====================
+// =====================
 
-function log(text){
+function setDebug(text){
 
-  debug.innerHTML =
-  text + "<hr>" + debug.innerHTML;
+  debug.innerHTML = text;
 
 }
 
-// ====================
+// =====================
 // GRID
-// ====================
+// =====================
 
 for(let i=-10;i<=10;i++){
 
@@ -137,7 +133,7 @@ for(let i=-10;i<=10;i++){
 
     start:`${i} 0 -10`,
     end:`${i} 0 10`,
-    color:"#666"
+    color:"#555"
 
   });
 
@@ -150,7 +146,7 @@ for(let i=-10;i<=10;i++){
 
     start:`-10 0 ${i}`,
     end:`10 0 ${i}`,
-    color:"#666"
+    color:"#555"
 
   });
 
@@ -158,9 +154,9 @@ for(let i=-10;i<=10;i++){
 
 }
 
-// ====================
+// =====================
 // RESTORE
-// ====================
+// =====================
 
 holes.forEach(h=>{
 
@@ -168,26 +164,39 @@ holes.forEach(h=>{
 
 });
 
-log("保存穴数: " + holes.length);
+setDebug(
+`保存穴数: ${holes.length}`
+);
 
-// ====================
-// CLICK
-// ====================
+// =====================
+// iPhone TAP FIX
+// =====================
 
-ground.addEventListener(
+scene.addEventListener(
 "click",(e)=>{
 
-  const point =
-  e.detail.intersection.point;
+  const touch =
+  e.detail.intersection;
+
+  if(!touch) return;
+
+  if(
+    touch.object.el.id
+    !== "ground"
+  ) return;
+
+  const point = touch.point;
 
   // SNAP
   const snap = 0.5;
 
   const x =
-  Math.round(point.x/snap)*snap;
+  Math.round(point.x/snap)
+  *snap;
 
   const z =
-  Math.round(point.z/snap)*snap;
+  Math.round(point.z/snap)
+  *snap;
 
   holes.push({x,z});
 
@@ -198,25 +207,28 @@ ground.addEventListener(
 
   createHole(x,z);
 
-  log(`
-  穴追加<br>
-  X: ${x}<br>
-  Z: ${z}<br>
-  穴数: ${holes.length}
+  setDebug(`
+  X:${x}<br>
+  Z:${z}<br>
+  穴数:${holes.length}
   `);
 
 });
 
-// ====================
-// CREATE HOLE
-// ====================
+// =====================
+// CREATE
+// =====================
 
 function createHole(x,z){
 
+  // HOLE
   const hole =
-  document.createElement("a-cylinder");
+  document.createElement(
+    "a-cylinder"
+  );
 
-  hole.setAttribute("position",{
+  hole.setAttribute(
+    "position",{
 
     x:x,
     y:0.05,
@@ -235,51 +247,56 @@ function createHole(x,z){
 
   scene.appendChild(hole);
 
+  // TEXT
+  const text =
+  document.createElement(
+    "a-text"
+  );
+
+  text.setAttribute(
+    "value",
+    `${x}, ${z}`
+  );
+
+  text.setAttribute(
+    "position",{
+
+    x:x,
+    y:0.3,
+    z:z
+
+  });
+
+  text.setAttribute(
+    "align","center"
+  );
+
+  text.setAttribute(
+    "color","yellow"
+  );
+
+  text.setAttribute(
+    "scale","0.8 0.8 0.8"
+  );
+
+  scene.appendChild(text);
+
 }
 
-// ====================
+// =====================
 // CLEAR
-// ====================
+// =====================
 
 clearBtn.addEventListener(
 "click",()=>{
 
-  localStorage.removeItem("holes");
+  localStorage.removeItem(
+    "holes"
+  );
 
   location.reload();
 
 });
-
-// ====================
-// FPS DEBUG
-// ====================
-
-let fps = 0;
-let last = performance.now();
-
-function fpsLoop(){
-
-  fps++;
-
-  const now =
-  performance.now();
-
-  if(now-last>=1000){
-
-    log("FPS: " + fps);
-
-    fps = 0;
-    last = now;
-
-  }
-
-  requestAnimationFrame(
-    fpsLoop
-  );
-
-}
-
-fpsLoop();
 
 </script>
 
