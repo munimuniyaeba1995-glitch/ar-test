@@ -2,37 +2,73 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-<title>AR寸法システム</title>
+<title>AR CAD SYSTEM DEBUG</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  font-family: sans-serif;
+
+body{
+  margin:0;
+  overflow:hidden;
+  font-family:sans-serif;
 }
 
-#ui {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
-  color: white;
-  background: rgba(0,0,0,0.5);
-  padding: 10px;
-  border-radius: 10px;
+#ui{
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:10;
+
+  background:rgba(0,0,0,0.7);
+  color:white;
+
+  padding:12px;
+  border-radius:10px;
+
+  width:240px;
 }
+
+button{
+  margin-top:10px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#ff4444;
+  color:white;
+  font-size:16px;
+}
+
+#debug{
+  margin-top:10px;
+  font-size:12px;
+  line-height:1.5;
+  max-height:200px;
+  overflow:auto;
+}
+
 </style>
 </head>
 
 <body>
 
 <div id="ui">
-  タップで穴追加🔥<br>
-  距離自動表示📏
+
+🔥 AR CAD SYSTEM<br>
+DEBUG EDITION
+
+<button id="clearBtn">
+穴データ削除
+</button>
+
+<div id="debug">
+起動中...
+</div>
+
 </div>
 
 <a-scene cursor="rayOrigin: mouse">
@@ -41,7 +77,10 @@ body {
   <a-camera position="0 1.6 0"></a-camera>
 
   <!-- ライト -->
-  <a-light type="ambient" intensity="1"></a-light>
+  <a-light
+    type="ambient"
+    intensity="1">
+  </a-light>
 
   <!-- 床 -->
   <a-plane
@@ -50,91 +89,197 @@ body {
     rotation="-90 0 0"
     width="20"
     height="20"
-    color="#444">
+    color="#333">
   </a-plane>
 
 </a-scene>
 
 <script>
 
-const scene = document.querySelector("a-scene");
-const ground = document.querySelector("#ground");
+const scene =
+document.querySelector("a-scene");
 
-let holes = [];
+const ground =
+document.querySelector("#ground");
 
-ground.addEventListener("click", (e) => {
+const debug =
+document.querySelector("#debug");
 
-  const point = e.detail.intersection.point;
+const clearBtn =
+document.querySelector("#clearBtn");
 
-  // 穴作成
-  const hole = document.createElement("a-cylinder");
+let holes =
+JSON.parse(
+localStorage.getItem("holes")
+) || [];
 
-  hole.setAttribute("position", {
-    x: point.x,
-    y: 0.05,
-    z: point.z
+// ====================
+// DEBUG
+// ====================
+
+function log(text){
+
+  debug.innerHTML =
+  text + "<hr>" + debug.innerHTML;
+
+}
+
+// ====================
+// GRID
+// ====================
+
+for(let i=-10;i<=10;i++){
+
+  const lineX =
+  document.createElement("a-entity");
+
+  lineX.setAttribute("line",{
+
+    start:`${i} 0 -10`,
+    end:`${i} 0 10`,
+    color:"#666"
+
   });
 
-  hole.setAttribute("radius", 0.08);
-  hole.setAttribute("height", 0.02);
-  hole.setAttribute("color", "red");
+  scene.appendChild(lineX);
+
+  const lineZ =
+  document.createElement("a-entity");
+
+  lineZ.setAttribute("line",{
+
+    start:`-10 0 ${i}`,
+    end:`10 0 ${i}`,
+    color:"#666"
+
+  });
+
+  scene.appendChild(lineZ);
+
+}
+
+// ====================
+// RESTORE
+// ====================
+
+holes.forEach(h=>{
+
+  createHole(h.x,h.z);
+
+});
+
+log("保存穴数: " + holes.length);
+
+// ====================
+// CLICK
+// ====================
+
+ground.addEventListener(
+"click",(e)=>{
+
+  const point =
+  e.detail.intersection.point;
+
+  // SNAP
+  const snap = 0.5;
+
+  const x =
+  Math.round(point.x/snap)*snap;
+
+  const z =
+  Math.round(point.z/snap)*snap;
+
+  holes.push({x,z});
+
+  localStorage.setItem(
+    "holes",
+    JSON.stringify(holes)
+  );
+
+  createHole(x,z);
+
+  log(`
+  穴追加<br>
+  X: ${x}<br>
+  Z: ${z}<br>
+  穴数: ${holes.length}
+  `);
+
+});
+
+// ====================
+// CREATE HOLE
+// ====================
+
+function createHole(x,z){
+
+  const hole =
+  document.createElement("a-cylinder");
+
+  hole.setAttribute("position",{
+
+    x:x,
+    y:0.05,
+    z:z
+
+  });
+
+  hole.setAttribute(
+    "radius",0.1);
+
+  hole.setAttribute(
+    "height",0.02);
+
+  hole.setAttribute(
+    "color","red");
 
   scene.appendChild(hole);
 
-  holes.push({
-    x: point.x,
-    z: point.z
-  });
+}
 
-  // 2個以上なら距離計算
-  if (holes.length >= 2) {
+// ====================
+// CLEAR
+// ====================
 
-    const a = holes[holes.length - 2];
-    const b = holes[holes.length - 1];
+clearBtn.addEventListener(
+"click",()=>{
 
-    const dx = b.x - a.x;
-    const dz = b.z - a.z;
+  localStorage.removeItem("holes");
 
-    const distance = Math.sqrt(dx * dx + dz * dz);
+  location.reload();
 
-    // mm換算
-    const mm = (distance * 1000).toFixed(0);
+});
 
-    // 中間位置
-    const midX = (a.x + b.x) / 2;
-    const midZ = (a.z + b.z) / 2;
+// ====================
+// FPS DEBUG
+// ====================
 
-    // 距離テキスト
-    const text = document.createElement("a-text");
+let fps = 0;
+let last = performance.now();
 
-    text.setAttribute("value", `${mm} mm`);
+function fpsLoop(){
 
-    text.setAttribute("position", {
-      x: midX,
-      y: 0.3,
-      z: midZ
-    });
+  fps++;
 
-    text.setAttribute("align", "center");
-    text.setAttribute("color", "yellow");
-    text.setAttribute("scale", "1 1 1");
+  const now =
+  performance.now();
 
-    scene.appendChild(text);
+  if(now-last>=1000){
 
-    // 線
-    const line = document.createElement("a-entity");
+    log("FPS: " + fps);
 
-    line.setAttribute("line", {
-      start: `${a.x} 0.05 ${a.z}`,
-      end: `${b.x} 0.05 ${b.z}`,
-      color: "yellow"
-    });
-
-    scene.appendChild(line);
+    fps = 0;
+    last = now;
 
   }
 
-});
+  requestAnimationFrame(
+    fpsLoop
+  );
+
+}
+
+fpsLoop();
 
 </script>
 
